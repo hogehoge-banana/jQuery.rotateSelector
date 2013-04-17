@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<title>test</title>
+	<meta name="keywords" content="">
+	<meta name="description" content="">
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
+	<script src="jquery.rotateSelector.js" ></script>
+	<style>
+	/* Write code */
+
+	#rotateSelector {
+
+		width: 500px;
+		height: 500px;
+		background-color: white;
+	}
+
+	#rotateSelector li {
+		width: 100px;
+		height: 100px;
+		border: solid 2px black;
+		position: absolute;
+	}
+
+	li {
+		list-style-type: none;
+	}
+
+	#obj1 {
+		background-color: yellow;
+	}
+	#obj2 {
+		background-color: red;
+	}
+	#obj3 {
+		background-color: blue;
+	}
+	#obj4 {
+		background-color: gray;
+	}
+	#obj5 {
+		background-color: pink;
+	}
+
+	#pointerInfo {
+		width: 100px;
+		height: 20px;
+		position: absolute;
+
+		background-color: black;
+		opacity: 0.8;
+		color: white;
+		z-index:1000;
+	}
+
+	</style>
+	<script>
+
+
+
+
+		$(function (e) {
+			$("#rotateSelector").rotateSelector();
+
+		});
+		function left () {
+			$("#rotateSelector").rotateSelector('prev');
+		}
+		function right () {
+			$("#rotateSelector").rotateSelector('next');
+		}
+
+
+	</script>
+</head>
+<body>
+
+
+<div>
+	<a href="javascript:left();">[&#8592;]</a>
+	<a href="javascript:right();">[&#8594;]</a>
+
+<div>
+
+<h3>debug</h3>
+<div id="debugView">
+<!-- main loop -->
+<p>fps:<span id="fps"></span></p>
+<p>current:<span id="currentR"></span>
+
+<!-- drag -->
+<p>drag x:<span id="dragx"></span> y:<span id="dragy"></span></p>
+<!-- ui debug -->
+<p>orientation:<span id="dragorientation"></span></p>
+<!-- auto debug -->
+<p>animateTarget:<span id="animateTarget"></span></p>
+
+</div>
+<div id="uidebug"></div>
+
+
+<div id="pointerInfo">
+x:<span id="pointx"></span> y:<span id="pointy"></span>
+</div>
+
+
+<div id='rotateSelector'>
+<ul>
+<li id='obj1'></li>
+<li id='obj2'></li>
+<li id='obj3'></li>
+<li id='obj4'></li>
+<li id='obj5'></li>
+
+</ul>
+</div>
+
+</body>
+</html>
