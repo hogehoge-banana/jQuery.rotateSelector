@@ -9,7 +9,6 @@
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
 	<script src="jquery.rotateSelector.js" ></script>
 	<style>
-	/* Write code */
 
 	#rotateSelector {
 
@@ -29,42 +28,29 @@
 		list-style-type: none;
 	}
 
-	#obj1 {
+	#item1 {
 		background-color: yellow;
 	}
-	#obj2 {
+	#item2 {
 		background-color: red;
 	}
-	#obj3 {
+	#item3 {
 		background-color: blue;
 	}
-	#obj4 {
+	#item4 {
 		background-color: gray;
 	}
-	#obj5 {
+	#item5 {
 		background-color: pink;
 	}
 
-	#pointerInfo {
-		width: 100px;
-		height: 20px;
-		position: absolute;
-
-		background-color: black;
-		opacity: 0.8;
-		color: white;
-		z-index:1000;
-	}
 
 	</style>
 	<script>
 
 
-
-
 		$(function (e) {
 			$("#rotateSelector").rotateSelector();
-
 		});
 		function left () {
 			$("#rotateSelector").rotateSelector('prev');
@@ -85,6 +71,20 @@
 
 <div>
 
+
+<div id='rotateSelector'>
+<ul>
+<li id='item1'></li>
+<li id='item2'></li>
+<li id='item3'></li>
+<li id='item4'></li>
+<li id='item5'></li>
+
+</ul>
+</div>
+
+
+
 <h3>debug</h3>
 <div id="debugView">
 <!-- main loop -->
@@ -94,29 +94,12 @@
 <!-- drag -->
 <p>drag x:<span id="dragx"></span> y:<span id="dragy"></span></p>
 <!-- ui debug -->
-<p>orientation:<span id="dragorientation"></span></p>
 <!-- auto debug -->
 <p>animateTarget:<span id="animateTarget"></span></p>
-
 </div>
 <div id="uidebug"></div>
 
 
-<div id="pointerInfo">
-x:<span id="pointx"></span> y:<span id="pointy"></span>
-</div>
-
-
-<div id='rotateSelector'>
-<ul>
-<li id='obj1'></li>
-<li id='obj2'></li>
-<li id='obj3'></li>
-<li id='obj4'></li>
-<li id='obj5'></li>
-
-</ul>
-</div>
 
 </body>
 </html>
