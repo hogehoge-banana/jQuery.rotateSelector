@@ -68,24 +68,27 @@
 		options: {
 			radius: 80,
 			centerX: 300,
-			centerY: 300,
+			centerY: 150,
 			speed: 200,
 			disabled: false,
+			oblateness: 0.5,
 
+			onchange: null,
+			onselected: null,
 
-			// old
-			elasticConstant: 0.16,
-			friction: 0.96,
-			section: null
+			debug: false
 		},
 
+		frontElementIndex: null,
+
+		offset : Math.PI / 2,
 		currentRadian : Math.PI / 2,
 
 		// Whether we drag
 		canceled: false,
 
-		isAutoAdjusting: false,
-		isUiControlling: false,
+		// 1: ui 2: auto
+		animateState:0,
 
 		// last updated
 		updated : 0,
@@ -95,6 +98,11 @@
 		orthodromic: true,
 		// interval between each object
 		interval: 0,
+
+		startPoint: {
+			x:0,
+			y:0
+		},
 
 		// point infomation at on drag event
 		lastPoint : {
@@ -120,25 +128,39 @@
 			this.selections = element.find('li');
 			this.interval = 2 * Math.PI / this.selections.length;
 			this.elementWrapper = $(element);
+
+			this.options = options;
+
 			this.init();
 		},
 
 		init: function () {
 			var self = this;
+
+			this.elementWrapper.css({
+				"overflow": "hidden"
+			});
+			this.elementWrapper.children("ul").css({position: "relative"});
+			this.selections.css({
+				position: "absolute",
+				"list-style-type" : "none"
+			});
+
 			this.setPoint(this.currentRadian);
 			this.animateTarget = this.currentRadian;
 
 			this.elementWrapper.bind(
 					'touchstart.rotateSelector mousedown.rotateSelector keydown.rotateSelector',
 					function (event) {
-						self.startUserControl(event);
-						event.preventDefault();
+						self.uiStartHandler(event);
 					})
 				.bind('touchend.rotateSelector mouseup.rotateSelector mouseleave.rotateSelector keyup.rotateSelector',
 					function (event) {
-						self.endUserControl(event);
-						event.preventDefault();
+						self.uiEndHandler(event);
 					});
+		},
+		selected: function () {
+			return  $(this.selections.get(this.frontElementIndex));
 		},
 
 		option: function(key, value) {
@@ -163,6 +185,7 @@
 
 			return this;
 		},
+
 
 		setOption: function(key, value) {
 			var refresh = false;
@@ -200,20 +223,14 @@
 		},
 		scrollBack: function () {
 
-			var cur = Math.abs(parseInt(this.currentRadian / this.interval));
-			var mod = cur % this.interval;
+			var current = this.currentRadian - this.offset;
+			var index = parseInt(current / this.interval)
+			var indexAbs = Math.abs(index);
+			var mod = current % this.interval;
 
-			if ((mod / this.interval) >= 0.5) {
-				cur += this.interval;
-			}
+			index += Math.round(mod / this.interval);
 
-
-			if (0 > this.currentRadian) {
-				this.animateTarget = - cur;
-			} else {
-				this.animateTarget = cur;
-			}
-
+			this.animateTarget = (index * this.interval) + this.offset;
 
 			this.orthodromic = this.animateTarget > this.currentRadian;
 			this.startAuto();
@@ -221,44 +238,87 @@
 		},
 		startAuto: function () {
 
-			this.isUiControlling = false;
-			this.isAutoAdjusting = true;
+			this.animateState = 2;
 			this.updated = (new Date()).getTime();
 			clearTimeout(this.mainLoopTimer);
 			this.mainLoop();
 
-			this.debugAuto();
 
 		},
-		endUserControl: function() {
 
-			if (!this.isUiControlling) {
-				return false;
+		uiStartHandler:  function (e) {
+
+			e.preventDefault();
+
+			this.debugEvents(e);
+
+
+			if (e.originalEvent.touches) {
+				var touches = e.originalEvent.touches;
+				this.startUserControl(touches[0].pageX, touches[0].pageY, e.timeStamp);
+			} else {
+				this.startUserControl(e.pageX, e.pageY, e.timeStamp);
 			}
 
-			clearTimeout(this.mainLoopTimer);
+		},
 
-			this.isUiControlling = false;
-			this.elementWrapper.unbind('touchmove.rotateSelector mousemove.rotateSelector');
+		uiEndHandler:  function (e) {
 
-			this.scrollBack();
+			e.preventDefault();
+
+			this.debugEvents(e);
+
+			this.endUserControl(e);
+		},
+
+		endUserControl: function(x, y, timestamp) {
+
+			if (1 == this.animateState) {
+
+				this.animateState = 0;
+				this.elementWrapper.unbind('touchmove.rotateSelector mousemove.rotateSelector');
+
+				if (!this.canceled) {
+					this.lastPoint.x = this.startPoint.x;
+					this.uiUpdate(16);
+
+					if (null != this.options.onselected && $.isFunction(this.options.onselected)) {
+						this.options.onselected(this.selected());
+					}
+
+				} else {
+
+					this.scrollBack();
+				}
+			}
 
 			return this;
 		},
 
-		startUserControl: function(event) {
+		startUserControl: function(x, y, timeStamp) {
 
+			this.canceled = false;
 
-			this.lastPoint.x = event.pageX;
-			this.lastPoint.timeStamp = event.timeStamp;
+			this.lastPoint.x = x;
+			this.lastPoint.timeStamp = timeStamp;
 			this.updatedPoint.x = this.lastPoint.x;
 
-			this.isAutoAdjusting = false;
-			this.isUiControlling = true;
+			this.startPoint.x = x;
+			this.startPoint.y = y;
+
+			this.animateState = 1;
 
 			var self = this;
 			this.elementWrapper.bind('touchmove.rotateSelector mousemove.rotateSelector', function(event) {
-				self.drag(event);
+				self.debugEvents(event);
+
+				if (event.originalEvent.touches) {
+					var touches = event.originalEvent.touches;
+					self.drag(touches[0].pageX, touches[0].pageY, event.timeStamp);
+				} else {
+					self.drag(event.pageX, event.pageY, event.timeStamp);
+				}
+
 			});
 
 			clearTimeout(this.mainLoopTimer);
@@ -267,26 +327,30 @@
 			return this;
 		},
 
-		drag: function (event) {
+		drag: function (x, y, timeStamp) {
 
+			if ((Math.max(x, this.startPoint.x) - Math.min(x, this.startPoint.x)) > 5 ||
+					(Math.max(y, this.startPoint.y) - Math.min(y, this.startPoint.y)) > 5) {
 
-			this.orthodromic = event.pageX < this.lastPoint.x;
+				this.canceled = true;
+			}
 
-			var dt = event.timeStamp - this.lastPoint.timeStamp;
+			this.orthodromic = x < this.lastPoint.x;
+
+			var dt = timeStamp - this.lastPoint.timeStamp;
 			var dif = 0;
+
 			if (this.orthodromic) {
-				dif = this.lastPoint.x - event.clientX;
+				dif = this.lastPoint.x - x;
 			} else {
-				dif = event.clientX - this.lastPoint.x;
+				dif = x - this.lastPoint.x;
 			}
 
 
 			this.mouseSpeed = dif / dt;
 
-			this.lastPoint.x = event.clientX;
-			this.lastPoint.timeStamp = event.timeStamp;
-
-			this.debugDrag(event.clientX, event.clientY);
+			this.lastPoint.x = x;
+			this.lastPoint.timeStamp = timeStamp;
 		},
 
 		setPoint: function (offset) {
@@ -298,13 +362,16 @@
 			var interval = this.interval,
 				radius = this.options.radius;
 
+			var maxZIndex = 0;
+			var frontElementIndex = null;
+
 			this.selections.each(function (i) {
 
 				var r = base + (i * interval);
 
-				var y = self.options.centerY + Math.sin(r) * radius;
-				var x = self.options.centerX + Math.cos(r) * radius;
+				var y = self.options.centerY + ((Math.sin(r) * radius) * self.options.oblateness);
 
+				var x = self.options.centerX + Math.cos(r) * radius;
 
 				var elem = $(this);
 				elem.setPoint({
@@ -312,15 +379,27 @@
 					y:y
 				});
 
-				elem.css({'z-index': ~~ y});
+				var zIndex =  ~~ y;
+				elem.css({'z-index': zIndex});
+
+				if (maxZIndex < zIndex) {
+					maxZIndex = zIndex;
+					frontElementIndex = i;
+				}
 			});
 
+			if (this.frontElementIndex != frontElementIndex) {
+				this.frontElementIndex = frontElementIndex;
 
+				if (null != this.options.onchange && $.isFunction(this.options.onchange)) {
+					this.options.onchange(this.selected());
+				}
+			}
 		},
 
 		autoAdjust: function (dt) {
 
-			if (!this.isAutoAdjusting) {
+			if (this.animateState != 2) {
 				return;
 			}
 			var dif = dt / this.options.speed;
@@ -334,7 +413,7 @@
 					(!this.orthodromic && next <= this.animateTarget)) {
 
 				next = this.animateTarget;
-				this.isAutoAdjusting = false;
+				this.animateState = 0;
 			}
 
 			this.setPoint(next);
@@ -357,14 +436,13 @@
 
 			this.updatedPoint.x = this.lastPoint.x;
 
-			this.debugUi(diff,  r);
 		},
 
 		mainLoop: function () {
 
 			var self = this;
 
-			if (this.isUiControlling || this.isAutoAdjusting) {
+			if (0 < this.animateState) {
 				this.mainLoopTimer = setTimeout(function () {
 					self.mainLoop();
 				}, 16);
@@ -374,11 +452,14 @@
 
 			var dt = currentTime - this.updated;
 
-			if (this.isUiControlling) {
+			switch (this.animateState) {
+			case 1: // ui
 				this.uiUpdate(dt);
-			}
-			if (this.isAutoAdjusting) {
+				break;
+
+			case 2: // auto adjust
 				this.autoAdjust(dt);
+				break;
 			}
 
 			this.updated = currentTime;
@@ -388,26 +469,9 @@
 		},
 
 
-		debugUi: function (diff, r) {
-			/*
-
-			$('#uidebug').append("<p>dif: " + diff + ", r: " + r + ", dif/radius: " + this.options.radius / diff);
-
-			var dragorientation = this.orthodromic? "next": "prev";
-			$("#dragorientation").html(dragorientation);
-			*/
-		},
-		debugDrag: function (x, y) {
-			$("#dragx").html(x);
-			$("#dragy").html(y);
-		},
-
-		debugAuto: function () {
-			$('#animateTarget').html(this.animateTarget);
-		},
-
 		lastDebug: 0,
 		debugMainloop: function (dt) {
+/*
 			this.lastDebug += dt;
 
 			if (this.lastDebug > 500) {
@@ -417,6 +481,11 @@
 			}
 
 			$('#currentR').html(this.currentRadian);
+*/
+		},
+
+		debugEvents: function (event) {
+
 		}
 	};
 
